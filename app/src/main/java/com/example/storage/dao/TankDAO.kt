@@ -12,14 +12,17 @@ interface TankDAO{
     fun getAll(): List<Tank>
 
     @Query("SELECT * FROM tank ORDER BY :filedName")
-    fun loadSortedByField(filedName: String): List<Tank>
+    fun getSortedByField(filedName: String): List<Tank>
 
     @Insert
-    fun insertAll(vararg tanks: Tank)
+    fun addAll(vararg tanks: Tank)
 
     @Insert
-    fun insertTank(tank: Tank)
+    fun addTank(tank: Tank)
 
     @Delete
     fun delete(tank: Tank)
+
+    @Query("DELETE FROM tank")
+    fun clearAll()
 }

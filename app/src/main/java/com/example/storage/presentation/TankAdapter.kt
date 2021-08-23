@@ -12,10 +12,10 @@ import com.example.storage.entities.Tank
 import com.example.storage.utill.getImageResourceFromNation
 
 
-class TankAdapter internal constructor(context: Context?, tanks: List<Tank>) :
+class TankAdapter internal constructor(context: Context?, tanks: ArrayList<Tank>) :
     RecyclerView.Adapter<TankAdapter.ViewHolder>() {
     private val inflater: LayoutInflater = LayoutInflater.from(context)
-    private val tanks: List<Tank> = tanks
+    private val tanks: ArrayList<Tank> = tanks
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view: View = inflater.inflate(R.layout.tank_list_item, parent, false)
@@ -39,5 +39,21 @@ class TankAdapter internal constructor(context: Context?, tanks: List<Tank>) :
         val nameView: TextView = view.findViewById(R.id.name)
         val yearView: TextView = view.findViewById(R.id.year)
 
+    }
+
+    fun addItem(item: Tank) {
+        this.tanks.add(item)
+        notifyDataSetChanged()
+    }
+
+    fun removeItem(item: Tank) {
+        this.tanks.remove(item)
+        notifyDataSetChanged()
+    }
+
+    fun changeDataset(arrayList: ArrayList<Tank>) {
+        this.tanks.clear()
+        this.tanks.addAll(arrayList)
+        notifyDataSetChanged()
     }
 }
