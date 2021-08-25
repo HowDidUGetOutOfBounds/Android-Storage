@@ -11,8 +11,14 @@ interface TankDAO{
     @Query("Select * from tank")
     fun getAll(): List<Tank>
 
-    @Query("SELECT * FROM tank ORDER BY :filedName")
-    fun getSortedByField(filedName: String): List<Tank>
+    @Query("SELECT * FROM tank ORDER BY Name")
+    fun getSortedByFieldName(): List<Tank>
+
+    @Query("SELECT * FROM tank ORDER BY `Year of release`")
+    fun getSortedByFieldYear(): List<Tank>
+
+    @Query("SELECT * FROM tank ORDER BY Nation")
+    fun getSortedByFieldNation(): List<Tank>
 
     @Insert
     fun addAll(vararg tanks: Tank)

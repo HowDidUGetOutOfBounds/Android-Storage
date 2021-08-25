@@ -4,7 +4,7 @@ import com.example.storage.R
 import com.example.storage.entities.Tank
 
 fun getImageResourceFromNation(tank: Tank): Int {
-    return when (tank.tankNation) {
+    return when (tank.tankNation?.trim()) {
         "СССР" -> R.drawable.ussr
         "Германия" -> R.drawable.germ
         "Великобритания" -> R.drawable.brit

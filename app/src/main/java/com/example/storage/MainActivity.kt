@@ -1,5 +1,6 @@
 package com.example.storage
 
+import android.R.attr
 import android.annotation.SuppressLint
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -17,6 +18,10 @@ import com.example.storage.dao.TankDAO
 import com.example.storage.presentation.TankAdapter
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import android.app.Activity
+
+import android.R.attr.data
+import androidx.preference.PreferenceManager
 
 
 class MainActivity : AppCompatActivity() {
@@ -26,6 +31,7 @@ class MainActivity : AppCompatActivity() {
     private var tankDao: TankDAO? = null
     private var tanks = ArrayList<Tank>()
     private lateinit var adapter: TankAdapter
+    private var LAUNCH_SECOND_ACTIVITY = 1
 
     @SuppressLint("NotifyDataSetChanged")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,11 +42,10 @@ class MainActivity : AppCompatActivity() {
 
         db = AppDatabase.getInstance(this)
         tankDao = db?.tankDao()
-
-        setInitialData()    //STUB, replace with retrieving data from db
-
-
         tanks.clear()
+
+        setInitialData()
+
 
 
 
@@ -50,22 +55,13 @@ class MainActivity : AppCompatActivity() {
 
 
         binding!!.addItemFab.setOnClickListener {
-            //TODO add item in data base
-            GlobalScope.launch {
-                tanks = ArrayList(tankDao?.getAll()!!)
-                runOnUiThread({
-                    adapter.changeDataset(tanks)
-                    adapter.notifyDataSetChanged()
-                })
-
-            }
-
+            navigateToAddItem()
         }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
-      return true
+        return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -75,29 +71,96 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode === LAUNCH_SECOND_ACTIVITY) {
+            if (resultCode === RESULT_OK) {
+                val tank: Tank = data?.extras?.getSerializable("newTank") as Tank
+                addItemToDB(tank)
+            }
+            if (resultCode === RESULT_CANCELED) {
+
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        var columnName = getColumnNameById(prefs.getString("sortTanksByListPreference", "0"))
+        changeSortOrder(columnName)
+    }
+
+
     override fun onDestroy() {
         super.onDestroy()
         binding = null
     }
 
-    fun navigateToSettings(){
-        val intent  = Intent(this, SettingsActivity::class.java)
+    private fun navigateToSettings() {
+        val intent = Intent(this, SettingsActivity::class.java)
         startActivity(intent)
     }
 
-    fun setInitialData(){
+    private fun navigateToAddItem() {
+        val intent = Intent(this, AddItemActivity::class.java)
+        startActivityForResult(intent, LAUNCH_SECOND_ACTIVITY)
+    }
+
+    fun setInitialData() {
 
         GlobalScope.launch {
-            tankDao?.clearAll()
-            try {
-                tankDao?.addTank(Tank(1, "Tiger", 1941, "Германия"))
-                tankDao?.addTank(Tank(2, "T34", 1939, "СССР"))
-                tankDao?.addTank(Tank(3, "M4 SHerman", 1941, "США"))
-            }catch (e: Exception)
-            {
-                Log.d("TAG", "setInitialData: " + e.stackTrace)
+//            tankDao?.clearAll()
+//            try {
+//                tankDao?.addTank(Tank("Tiger", 1941, "Германия"))
+//                tankDao?.addTank(Tank("T34", 1939, "СССР"))
+//                tankDao?.addTank(Tank("M4 SHerman", 1941, "США"))
+//            } catch (e: Exception) {
+//                Log.d("TAG", "setInitialData: " + e.stackTrace)
+//            }
+            loadDataToBD()
+        }
+    }
+
+    fun changeSortOrder(field: String) {
+        GlobalScope.launch {
+            tanks = when(field) {
+                "Nation" -> ArrayList(tankDao?.getSortedByFieldNation())
+                "Name" -> ArrayList(tankDao?.getSortedByFieldName())
+                else -> ArrayList(tankDao?.getSortedByFieldYear())
+            }
+            runOnUiThread {
+                adapter.changeDataset(tanks)
+                adapter.notifyDataSetChanged()
             }
         }
+    }
 
+    fun loadDataToBD() {
+        tanks = ArrayList(tankDao?.getAll()!!)
+        runOnUiThread {
+            adapter.changeDataset(tanks)
+            adapter.notifyDataSetChanged()
         }
+    }
+
+    fun addItemToDB(tank: Tank) {
+        GlobalScope.launch {
+            try {
+                tankDao?.addTank(tank)
+            } catch (e: Exception) {
+                Log.d("TAG", "setInitialData: " + e.stackTrace)
+            }
+
+            loadDataToBD()
+        }
+    }
+
+    private fun getColumnNameById(string: String?): String {
+        return when (string?.toIntOrNull()) {
+            1 -> "Year of release"
+            2 -> "Nation"
+            else -> "Name"
+        }
+    }
 }
