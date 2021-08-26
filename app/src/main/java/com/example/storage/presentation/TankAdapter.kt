@@ -12,10 +12,14 @@ import com.example.storage.entities.Tank
 import com.example.storage.utill.getImageResourceFromNation
 
 
-class TankAdapter internal constructor(context: Context?, tanks: ArrayList<Tank>) :
+class TankAdapter internal constructor(context: Context?, tanks: ArrayList<Tank>, private val onClickListener: OnTankClickListener) :
     RecyclerView.Adapter<TankAdapter.ViewHolder>() {
     private val inflater: LayoutInflater = LayoutInflater.from(context)
     private val tanks: ArrayList<Tank> = tanks
+
+    interface OnTankClickListener{
+        fun onTankClick(tank: Tank, position: Int)
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view: View = inflater.inflate(R.layout.tank_list_item, parent, false)
@@ -27,6 +31,10 @@ class TankAdapter internal constructor(context: Context?, tanks: ArrayList<Tank>
         holder.flagView.setImageResource(getImageResourceFromNation(tank))
         holder.nameView.text = tank.tankName
         holder.yearView.text = tank.tankYear!!.toString()
+
+        holder.itemView.setOnClickListener {
+            onClickListener?.onTankClick(tank, position)
+        }
     }
 
 

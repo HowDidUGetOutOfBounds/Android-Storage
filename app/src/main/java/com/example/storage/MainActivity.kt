@@ -9,6 +9,7 @@ import android.view.MenuItem
 import com.example.storage.databinding.ActivityMainBinding
 
 import android.content.Intent
+import android.content.SharedPreferences
 import android.util.Log
 import com.example.storage.entities.Tank
 import com.example.storage.settings.SettingsActivity
@@ -18,9 +19,7 @@ import com.example.storage.dao.TankDAO
 import com.example.storage.presentation.TankAdapter
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import android.app.Activity
 
-import android.R.attr.data
 import androidx.preference.PreferenceManager
 
 
@@ -32,6 +31,7 @@ class MainActivity : AppCompatActivity() {
     private var tanks = ArrayList<Tank>()
     private lateinit var adapter: TankAdapter
     private var LAUNCH_SECOND_ACTIVITY = 1
+    private lateinit var prefs: SharedPreferences
 
     @SuppressLint("NotifyDataSetChanged")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,6 +39,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         val view = binding?.root
         setContentView(view)
+        prefs = PreferenceManager.getDefaultSharedPreferences(this)
 
         db = AppDatabase.getInstance(this)
         tankDao = db?.tankDao()
@@ -49,7 +50,14 @@ class MainActivity : AppCompatActivity() {
 
 
 
-        adapter = TankAdapter(this, tanks)
+        adapter = TankAdapter(this, tanks, object : TankAdapter.OnTankClickListener{
+            override fun onTankClick(tank: Tank, position: Int) {
+                GlobalScope.launch {
+                    tankDao?.delete(tank)
+                    loadDataToBD()
+                }
+            }
+        })
 
         binding!!.list.adapter = adapter
 
@@ -86,7 +94,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
         var columnName = getColumnNameById(prefs.getString("sortTanksByListPreference", "0"))
         changeSortOrder(columnName)
     }
@@ -110,14 +117,6 @@ class MainActivity : AppCompatActivity() {
     fun setInitialData() {
 
         GlobalScope.launch {
-//            tankDao?.clearAll()
-//            try {
-//                tankDao?.addTank(Tank("Tiger", 1941, "Германия"))
-//                tankDao?.addTank(Tank("T34", 1939, "СССР"))
-//                tankDao?.addTank(Tank("M4 SHerman", 1941, "США"))
-//            } catch (e: Exception) {
-//                Log.d("TAG", "setInitialData: " + e.stackTrace)
-//            }
             loadDataToBD()
         }
     }
@@ -137,6 +136,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun loadDataToBD() {
+        //
         tanks = ArrayList(tankDao?.getAll()!!)
         runOnUiThread {
             adapter.changeDataset(tanks)
@@ -148,6 +148,7 @@ class MainActivity : AppCompatActivity() {
         GlobalScope.launch {
             try {
                 tankDao?.addTank(tank)
+                changeSortOrder( getColumnNameById(prefs.getString("sortTanksByListPreference", "0")))
             } catch (e: Exception) {
                 Log.d("TAG", "setInitialData: " + e.stackTrace)
             }
